@@ -269,7 +269,7 @@ export class LawoRubyMixerConnection {
             if (node.contents.type !== Model.ElementType.Parameter) return
 
             logger.debug(`Subscription of channel level: ${command}`)
-            this.emberConnection.subscribe(
+            const req = await this.emberConnection.subscribe(
                 node as NumberedTreeNode<EmberElement>,
                 () => {
                     const levelInDecibel: number = (
@@ -287,7 +287,7 @@ export class LawoRubyMixerConnection {
                     ) {
                         // update the fader
                         const level = dbToFloat(levelInDecibel)
-                        store.dispatch  ({   
+                        store.dispatch  ({
                             type: FaderActionTypes.SET_FADER_LEVEL,
                             faderIndex: ch - 1,
                             level: level,
@@ -311,6 +311,7 @@ export class LawoRubyMixerConnection {
                     }
                 }
             )
+            await req.response
         } catch (e) {
             logger.data(e).debug('error when subscribing to fader level')
         }
@@ -333,7 +334,7 @@ export class LawoRubyMixerConnection {
             if (node.contents.type !== Model.ElementType.Parameter) return
 
             logger.debug(`Subscription of channel gain: ${command}`)
-            this.emberConnection.subscribe(
+            const req = await this.emberConnection.subscribe(
                 node as NumberedTreeNode<EmberElement>,
                 () => {
                     logger.trace(`Receiving Gain from Ch ${ch}`)
@@ -353,6 +354,7 @@ export class LawoRubyMixerConnection {
                     }
                 }
             )
+            await req.response
         } catch (e) {
             logger.data(e).debug('Error when subscribing to gain level')
         }
@@ -386,7 +388,7 @@ export class LawoRubyMixerConnection {
             }
 
             logger.debug(`Subscription of channel input selector: ${command}`)
-            this.emberConnection.subscribe(
+            const req = await this.emberConnection.subscribe(
                 node as NumberedTreeNode<EmberElement>,
                 () => {
                     logger.trace(`Receiving InpSelector from Ch ${ch}`)
@@ -411,6 +413,7 @@ export class LawoRubyMixerConnection {
                     )
                 }
             )
+            await req.response
         } catch (e) {
             if (e.message.match(/could not find node/i)) {
                 logger.debug(`set_cap ${ch} hasInputSel false`)
@@ -453,7 +456,7 @@ export class LawoRubyMixerConnection {
             }
 
             logger.debug(`Subscription of AMix state: ${command}`)
-            this.emberConnection.subscribe(
+            const req = await this.emberConnection.subscribe(
                 node as NumberedTreeNode<EmberElement>,
                 () => {
                     logger.trace(`Receiving AMix state from Ch ${ch}`)
@@ -466,6 +469,7 @@ export class LawoRubyMixerConnection {
                     global.mainThreadHandler.updatePartialStore(ch - 1)
                 }
             )
+            await req.response
         } catch (e) {
             if (e.message.match(/could not find node/i)) {
                 logger.debug(`set_cap ${ch - 1} hasAMix false`)
@@ -502,14 +506,15 @@ export class LawoRubyMixerConnection {
 
         this.emberConnection
             .getElementByPath(message)
-            .then((element: any) => {
+            .then(async (element: any) => {
                 logger.trace(`Sending out message: ${message}`)
-                return this.emberConnection.setValue(
-                    element,
-                    typeof value === 'string' ? parseFloat(value) : value
-                )
+                await (
+                    await this.emberConnection.setValue(
+                        element,
+                        typeof value === 'string' ? parseFloat(value) : value
+                    )
+                ).response
             })
-            .then((req) => req.response)
             .catch((error: any) => {
                 logger.data(error).error('Ember Error ')
             })

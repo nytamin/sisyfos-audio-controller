@@ -112,10 +112,10 @@ export class StuderMixerConnection {
         )
         this.emberConnection
             .getElementByPath(command)
-            .then((node: any) => {
+            .then(async (node: any) => {
                 logger.info(`Subscription of channel: ${command}`)
                 this.emberNodeObject[ch - 1] = node
-                this.emberConnection.subscribe(node, () => {
+                const req = await this.emberConnection.subscribe(node, () => {
                     logger.trace(`Receiving Level from Ch ${ch}`)
                     if (
                         !state.channels[0].chMixerConnection[this.mixerIndex]
@@ -140,6 +140,7 @@ export class StuderMixerConnection {
                         }
                     }
                 })
+                await req.response
             })
             .catch((error: any) => {
                 logger.error(error)
@@ -160,8 +161,8 @@ export class StuderMixerConnection {
                     String(channelTypeIndex + 1)
                 )
             )
-            .then((node: any) => {
-                this.emberConnection.subscribe(node, () => {
+            .then(async (node: any) => {
+                const req = await this.emberConnection.subscribe(node, () => {
                     store.dispatch({
                         type: ChannelActionTypes.SET_CHANNEL_LABEL,
                         mixerIndex: this.mixerIndex,
@@ -169,6 +170,7 @@ export class StuderMixerConnection {
                         label: node.contents.value,
                     })
                 })
+                await req.response
             })
     }
 
@@ -199,12 +201,13 @@ export class StuderMixerConnection {
 
         /*
         this.emberConnection.getElementByPath(message)
-        .then((element: any) => {
+        .then(async (element: any) => {
             logger.trace(`Sending out message: ${message}`)
-            this.emberConnection.setValue(
+            const req = await this.emberConnection.setValue(
                 this.emberNodeObject[channel-1],
                 typeof value === 'number' ? value : parseFloat(value)
             )
+                await req.response
         })
         .catch((error: any) => {
             logger.data(error).error("Ember Error")
